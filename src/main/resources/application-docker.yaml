@@ -1,11 +1,11 @@
 server:
-  port: 8082
+  port: 8080
 
 spring:
   application:
-    name: ead-course-service
+    name: ead-curse-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/ead-curse
+    url: jdbc:postgresql://host.docker.internal:5432/ead-curse
     username: postgres
     password: mysecretpassword
   jpa:
@@ -37,6 +37,6 @@ ead:
 eureka:
   client:
     service-url:
-      defaultZone:  ${EUREKA_URL:http://localhost:8761/eureka}
+      defaultZone:  ${EUREKA_URL:http://172.18.224.1:8761/eureka}
   instance:
     prefer-ip-address: true
