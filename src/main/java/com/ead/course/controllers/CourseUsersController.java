@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpStatusCodeException;
 
 import javax.validation.Valid;
+import javax.ws.rs.Path;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,8 +41,12 @@ public class CourseUsersController {
     CourseUserService courseUserService;
 
     @GetMapping("/courses/{courseId}/users")
-    public ResponseEntity<Page<UserDto>> getAllUsersByCourse(@PageableDefault(size = 10, page = 0,sort = "userId", direction = Sort.Direction.ASC) Pageable page,
+    public ResponseEntity<Object> getAllUsersByCourse(@PageableDefault(size = 10, page = 0,sort = "userId", direction = Sort.Direction.ASC) Pageable page,
                                                              @PathVariable(value = "courseId")UUID courseId){
+        Optional<CourseModel> courseModelOptional = courseService.findById(courseId);
+        if(courseModelOptional.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course not found");
+        }
 
         return ResponseEntity.status(HttpStatus.OK).body(curseClient.getAllUsersByCourse(courseId,page));
     }
@@ -77,5 +82,16 @@ public class CourseUsersController {
 
         CourseUserModel courseUserModel = courseUserService.saveAndSendSubscriptionUserInCourse(courseModel.convertToCourseUserModel(userId));
         return ResponseEntity.status(HttpStatus.CREATED).body(courseUserModel);
+    }
+
+
+    @DeleteMapping("/courses/users/{userId}")
+    public ResponseEntity<Object> deleteCoursesUsersByUser(@PathVariable(value = "userId") UUID userId){
+        if(!courseUserService.existsByUserId(userId)){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course Users not found");
+        }
+
+        courseUserService.deleteCourseUserByUserId(userId);
+        return ResponseEntity.status(HttpStatus.OK).body("Course User deleted");
     }
 }

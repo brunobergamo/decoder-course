@@ -68,7 +68,7 @@ public class CourseController {
         }
         log.debug("DELETE deleteCourse courseId deleted {} ", courseId);
         log.info("Course deleted successfully courseId {} ", courseId);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not found");
+        return ResponseEntity.status(HttpStatus.OK).body("Not found");
     }
 
     @PutMapping("/{courseId}")
