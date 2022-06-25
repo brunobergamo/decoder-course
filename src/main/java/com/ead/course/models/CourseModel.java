@@ -5,7 +5,6 @@ import com.ead.course.enums.CourseStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
@@ -60,21 +59,17 @@ public class CourseModel implements Serializable {
     @Fetch(FetchMode.SUBSELECT)
     private Set<ModuleModel> modules;
 
-    @OneToMany(fetch = FetchType.LAZY,mappedBy = "course")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    @Fetch(FetchMode.JOIN)
-    private Set<CourseUserModel> courseUserModels;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "TB_COURSES_USERS",
+        joinColumns = @JoinColumn(name = "courseId"),
+        inverseJoinColumns = @JoinColumn(name = "userId"))
+    private Set<UserModel> users;
+
+
 
     public UUID getCourseId() {
         return courseId;
-    }
-
-    public Set<CourseUserModel> getCourseUserModels() {
-        return courseUserModels;
-    }
-
-    public void setCourseUserModels(Set<CourseUserModel> courseUserModels) {
-        this.courseUserModels = courseUserModels;
     }
 
     public void setCourseId(UUID courseId) {
@@ -153,7 +148,11 @@ public class CourseModel implements Serializable {
         this.modules = modules;
     }
 
-    public CourseUserModel convertToCourseUserModel(UUID userId){
-        return new CourseUserModel(this,userId);
+    public Set<UserModel> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<UserModel> users) {
+        this.users = users;
     }
 }

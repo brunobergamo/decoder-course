@@ -1,10 +1,12 @@
 package com.ead.course.services;
 
 import com.ead.course.models.CourseModel;
+import com.ead.course.models.UserModel;
 import com.ead.course.speficication.SpecificationTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +22,10 @@ public interface CourseService {
     List<CourseModel> findAll();
 
     Page<CourseModel> findAll(Specification<CourseModel> spec, Pageable pageable);
+
+    boolean existsByCourseAndUser(UUID courseId, UUID userId);
+
+    void saveSubscriptionUserInCourse(UUID courseId, UUID userId);
+
+    void saveSubscriptionUserInCourseAndSendNotification(CourseModel courseModel, UserModel userModel);
 }

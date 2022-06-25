@@ -1,27 +1,30 @@
 package com.ead.course.services.impl;
 
-import com.ead.course.client.AuthUserClient;
+import com.ead.course.dtos.NotificationCommandDto;
 import com.ead.course.models.CourseModel;
-import com.ead.course.models.CourseUserModel;
 import com.ead.course.models.LessonModel;
 import com.ead.course.models.ModuleModel;
+import com.ead.course.models.UserModel;
+import com.ead.course.publisher.NotificationCommandPublisher;
 import com.ead.course.repositories.CourseRepository;
-import com.ead.course.repositories.CourseUserRepository;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
+import com.ead.course.repositories.UserRepository;
 import com.ead.course.services.CourseService;
-import com.ead.course.speficication.SpecificationTemplate;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Log4j2
 @Service
 public class CourseServiceImpl implements CourseService {
 
@@ -35,15 +38,14 @@ public class CourseServiceImpl implements CourseService {
     LessonRepository lessonRepository;
 
     @Autowired
-    CourseUserRepository courseUserRepository;
+    UserRepository courseUserRepository;
 
     @Autowired
-    AuthUserClient authUserClient;
+    NotificationCommandPublisher notificationCommandPublisher;
 
     @Override
     @Transactional
     public void delete(CourseModel courseModel) {
-        boolean shouldDeleteCourseUserInAuthUser = false ;
         List<ModuleModel> moduleList = moduleRepository.findByCourse_CourseId(courseModel.getCourseId());
         if(!moduleList.isEmpty()){
             for(ModuleModel model: moduleList){
@@ -54,17 +56,8 @@ public class CourseServiceImpl implements CourseService {
             }
             moduleRepository.deleteAll(moduleList);
         }
-
-        List<CourseUserModel> courseUserModels = courseUserRepository.findByCourse(courseModel);
-        if(!courseUserModels.isEmpty()){
-            shouldDeleteCourseUserInAuthUser = true;
-            courseUserRepository.deleteAll(courseUserModels);
-        }
+        courseRepository.deleteCourseUserByCourse(courseModel.getCourseId());
         courseRepository.delete(courseModel);
-
-        if(shouldDeleteCourseUserInAuthUser){
-            authUserClient.deleteCourseInAuthUser(courseModel.getCourseId());
-        }
     }
 
     @Override
@@ -85,5 +78,32 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public Page<CourseModel> findAll(Specification<CourseModel> spec, Pageable pageable) {
         return courseRepository.findAll(spec,pageable);
+    }
+
+    @Override
+    public boolean existsByCourseAndUser(UUID courseId, UUID userId) {
+        return courseRepository.existsByCourseAndUser(courseId,userId);
+    }
+
+    @Override
+    @Transactional
+    public void saveSubscriptionUserInCourse(UUID courseId, UUID userId) {
+        courseRepository.saveCourseUser(courseId,userId);
+    }
+
+    @Override
+    @Transactional
+    public void saveSubscriptionUserInCourseAndSendNotification(CourseModel courseModel, UserModel userModel) {
+        courseRepository.saveCourseUser(courseModel.getCourseId(),userModel.getUserId());
+        try {
+            var notificationCommandDto = new NotificationCommandDto();
+            notificationCommandDto.setTitle("Bem-vindo ao curso: " + courseModel.getName());
+            notificationCommandDto.setMessage(userModel.getFullName() + "a sua inscrição foi realizada com sucesso!!");
+            notificationCommandDto.setUserId(userModel.getUserId());
+            notificationCommandPublisher.publishNotificationCommand(notificationCommandDto);
+        }
+        catch (Exception e ){
+            log.warn("Error sending notification");
+        }
     }
 }

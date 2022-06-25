@@ -1,11 +1,12 @@
 package com.ead.course.speficication;
 
 import com.ead.course.models.CourseModel;
-import com.ead.course.models.CourseUserModel;
+import com.ead.course.models.UserModel;
 import com.ead.course.models.LessonModel;
 import com.ead.course.models.ModuleModel;
 import net.kaczmarzyk.spring.data.jpa.domain.Equal;
 import net.kaczmarzyk.spring.data.jpa.domain.Like;
+import net.kaczmarzyk.spring.data.jpa.domain.LikeIgnoreCase;
 import net.kaczmarzyk.spring.data.jpa.web.annotation.And;
 import net.kaczmarzyk.spring.data.jpa.web.annotation.Spec;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,6 +24,13 @@ public class SpecificationTemplate {
         @Spec(path = "name", spec = Like.class),
         @Spec(path = "courseStatus", spec = Equal.class)})
     public interface CourseSpec extends Specification<CourseModel>{}
+
+    @And({
+            @Spec(path = "userType", spec = Equal.class),
+            @Spec(path = "email", spec = LikeIgnoreCase.class),
+            @Spec(path = "fullname", spec = Like.class),
+            @Spec(path = "userStatus", spec = Equal.class)})
+    public interface UserSpec extends Specification<UserModel>{}
 
     @And({@Spec(path = "title", spec = Like.class)})
     public interface ModuleSpec extends Specification<ModuleModel>{}
@@ -51,10 +59,22 @@ public class SpecificationTemplate {
         };
     }
 
-    public static Specification<CourseModel> courseUsers(final UUID  userId){
-        return (root,query,cb) -> {
-            Join<CourseModel, CourseUserModel> courseJoin = root.join("courseUserModels");
-            return cb.equal(courseJoin.get("userId"),userId);
+    public static Specification<UserModel> userCourseId(final UUID courseId) {
+        return (root, query, cb) -> {
+            Root<UserModel> user = root;
+            Root<CourseModel> course = query.from(CourseModel.class);
+            Expression<Collection<UserModel>> courseModules = course.get("users");
+            return cb.and(cb.equal(course.get("courseId"), courseId), cb.isMember(user, courseModules));
         };
     }
+
+    public static Specification<CourseModel> courseUserID(final UUID userId) {
+        return (root, query, cb) -> {
+            Root<CourseModel> course = root;
+            Root<UserModel> user = query.from(UserModel.class);
+            Expression<Collection<CourseModel>> userCourses = user.get("courses");
+            return cb.and(cb.equal(course.get("userId"), userId), cb.isMember(course, userCourses));
+        };
+    }
+
 }
