@@ -1,11 +1,13 @@
 package com.ead.course.validation;
 
+import com.ead.course.config.security.AuthenticationCurrentUserService;
 import com.ead.course.dtos.CourseDTO;
 import com.ead.course.enums.UserType;
 import com.ead.course.models.UserModel;
 import com.ead.course.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -22,6 +24,9 @@ public class CourseValidator implements Validator {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    private AuthenticationCurrentUserService authenticationCurrentUserService;
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -41,6 +46,12 @@ public class CourseValidator implements Validator {
      }
 
      private void validateUserInstructor(UUID userId, Errors errors){
+         UUID currentUserId = authenticationCurrentUserService.getCurrentUser().getUserId();
+
+         if(!currentUserId.equals(userId)){
+             throw  new AccessDeniedException("Forbidden");
+         }
+
          Optional<UserModel> userModelOptional = userService.findById(userId);
          if(userModelOptional.isEmpty()){
              errors.rejectValue("userInstructor", "userInstructornotFound", "User instructor not found");
