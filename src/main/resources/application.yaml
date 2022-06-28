@@ -2,4 +2,4 @@ spring:
   application:
     name: ead-course-service
   profiles:
-    active: dev
+    active: prod
